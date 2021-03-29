@@ -54,7 +54,7 @@ jobs:
       - aws-cli/setup:
             aws-access-key-id: AWS_ACCESS_KEY_ID
             aws-secret-access-key: AWS_SECRET_ACCESS_KEY
-            aws-region: ${AWS_DEFAULT_REGION}
+            aws-region: AWS_DEFAULT_REGION
       - update-tag:
           module: "api"
       - update-tag:
