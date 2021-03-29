@@ -5,31 +5,65 @@ orbs:
   aws-ecs: circleci/aws-ecs@2.1.0
   aws-cli: circleci/aws-cli@1.4.1
 # Orchestrate or schedule a set of jobs
+
+references:
+  set_deploy_env: &set_deploy_env
+    run:
+      name: Set deployment environment
+      command: |
+        if [ "${CIRCLE_BRANCH}" == "staging" ]; then
+            echo 'export DEPLOY_ENV=staging' >> $BASH_ENV
+        elif [ "${CIRCLE_BRANCH}" == "master" ]; then
+            echo 'export DEPLOY_ENV=dev' >> $BASH_ENV
+        else
+            echo 'export DEPLOY_ENV=dev' >> $BASH_ENV
+        fi
+        source $BASH_ENV
+
 workflows:
   deploy:
     jobs:
-      - update-tag
+      - deploy
+
+
+commands:
+    update-tag:
+      parameters:
+        module:
+          type: string
+          default: "api"
+      steps:
+        - aws-ecs/update-service:
+            cluster-name: "${APP_NAME}-${DEPLOY_ENV}"
+            container-image-name-updates: "container=${APP_NAME}_<<parameters.module>>,tag=${CIRCLE_SHA1}"
+            family: '${DEPLOY_ENV}-<<parameters.module>>'
+            service-name: "${APP_NAME}-${WORKSPACE}-<<parameters.module>>"
+
 
 jobs: 
-  update-tag:
+  deploy:
     docker:
-      - image: 'cimg/python:3.9.1'
+        - image: 'cimg/python:3.9.1'
     steps:
+      - *set_deploy_env
       - run:
           command: |
             echo 'export APP_NAME=crowdcomms' >> $BASH_ENV
-            echo 'export WORKSPACE=dev' >> $BASH_ENV
-            echo 'export MODULE_NAME=api' >> $BASH_ENV
+            echo 'export AWS_DEFAULT_REGION=' >> $BASH_ENV
             source $BASH_ENV
       - aws-cli/setup:
-          aws-access-key-id: AWS_ACCESS_KEY_ID
-          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
-          aws-region: AWS_DEFAULT_REGION
-      - aws-ecs/update-service:
-          cluster-name: '${APP_NAME}-${WORKSPACE}'
-          container-image-name-updates: 'container=${APP_NAME}_${MODULE_NAME},tag=${CIRCLE_SHA1}'
-          family: '${WORKSPACE}-${MODULE_NAME}'
-          service-name: '${APP_NAME}-${WORKSPACE}-${MODULE_NAME}'
+            aws-access-key-id: AWS_ACCESS_KEY_ID
+            aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+            aws-region: AWS_DEFAULT_REGION
+      - update-tag:
+          module: "api"
+      - update-tag:
+          module: "cms"
+      - update-tag:
+          module: "worker"
+      - update-tag:
+          module: "beat"           
+
 
 
 
