@@ -48,7 +48,7 @@ commands:
 jobs: 
   build-and-push-image:
     docker: 
-      - image: amazoncorretto:15-alpine
+      - image: cimg/openjdk:16.0.0
     steps:
       - checkout
       - run: 
