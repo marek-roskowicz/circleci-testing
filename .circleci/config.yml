@@ -4,6 +4,7 @@ version: 2.1
 orbs:
   aws-ecs: circleci/aws-ecs@2.1.0
   aws-cli: circleci/aws-cli@1.4.1
+  aws-ecr: circleci/aws-ecr@6.15.3
 # Orchestrate or schedule a set of jobs
 
 references:
@@ -23,7 +24,11 @@ references:
 workflows:
   deploy:
     jobs:
-      - deploy
+      - build-and-push-image
+      - deploy-fargate:
+          requires:
+            - build-and-push-image
+
 
 
 commands:
@@ -35,13 +40,28 @@ commands:
       steps:
         - aws-ecs/update-service:
             cluster-name: "${APP_NAME}-${DEPLOY_ENV}"
-            container-image-name-updates: "container=${APP_NAME}_<<parameters.module>>,tag=e9ae3c220b23"
+            container-image-name-updates: "container=${APP_NAME}_<<parameters.module>>,tag=${CIRCLE_SHA1}"
             family: '${DEPLOY_ENV}-<<parameters.module>>'
             service-name: "${APP_NAME}-${DEPLOY_ENV}-<<parameters.module>>"
 
 
 jobs: 
-  deploy:
+  build-and-push-image:
+    docker: 
+      - image: amazoncorretto:15-alpine
+    steps:
+      - checkout
+      - run: 
+          name: Build java app 
+          command: ./mvnw package 
+      - aws-ecr/build-and-push-image:
+          dockerfile: "./Dockerfile"
+          tag: "${CIRCLE_SHA1}"
+          repo: "marek_testing_repo"
+          create-repo: true
+          region: AWS_DEFAULT_REGION
+          setup-remote-docker: true
+  deploy-fargate:
     docker:
         - image: 'cimg/python:3.9.1'
     steps:
