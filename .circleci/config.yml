@@ -37,7 +37,7 @@ commands:
             cluster-name: "${APP_NAME}-${DEPLOY_ENV}"
             container-image-name-updates: "container=${APP_NAME}_<<parameters.module>>,tag=e9ae3c220b23"
             family: '${DEPLOY_ENV}-<<parameters.module>>'
-            service-name: "${APP_NAME}-${WORKSPACE}-<<parameters.module>>"
+            service-name: "${APP_NAME}-${DEPLOY_ENV}-<<parameters.module>>"
 
 
 jobs: 
