@@ -50,7 +50,6 @@ jobs:
     docker: 
       - image: amazoncorretto:15-alpine
     steps:
-      - aws-cli/install
       - checkout
       - run: 
           name: Build java app 
