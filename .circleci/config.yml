@@ -53,7 +53,8 @@ jobs:
       - checkout
       - run: 
           name: Build java app 
-          command: ./mvnw package 
+          command: ./mvnw package
+      - aws-cli/install 
       - aws-ecr/build-and-push-image:
           dockerfile: "./Dockerfile"
           tag: "${CIRCLE_SHA1}"
